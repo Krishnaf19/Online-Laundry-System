@@ -1,0 +1,20 @@
+import {ApiError} from "../utils/ApiError.js"
+import {ApiResponse} from "../utils/ApiResponse.js"
+import {asyncHandler} from "../utils/asyncHandler.js"
+import { User } from "../models/user.model.js"
+
+const getProductById = asyncHandler(async (req, res) => {
+    
+})
+
+const getAllproduct = asyncHandler(async (req, res) => {
+    
+})
+
+const updateProductDetails = asyncHandler(async (req, res) => {
+    
+})
+
+const deleteProduct = asyncHandler(async (req, res) => {
+    
+})

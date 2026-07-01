@@ -11,7 +11,8 @@ const userSchema = new Schema(
 
         email: {
             type: String,
-            required: true
+            required: true,
+            unique: true
         },
 
         password: {
@@ -26,8 +27,8 @@ const userSchema = new Schema(
 
         role: {
             type: String,
-            enum: ["USER", "PROVIDER", "ADMIN"],
-            default: "USER"
+            enum: ["user", "vendor", "admin"],
+            default: "user"
         },
 
         userAddress: {
@@ -44,14 +45,14 @@ const userSchema = new Schema(
     }
 )
 
-userSchema.pre("save", async function () {                           //mongoose middleware
+userSchema.pre("save", async function () {                                  //mongoose middleware
 
     if (!this.isModified("password")) return;
     this.password = await bcrypt.hash(this.password, 10)
 
 })
 
-userSchema.methods.isPasswordCorrect = function(userPassword) {      //jwt is npm package
+userSchema.methods.isPasswordCorrect = async function (userPassword) {      //jwt is npm package
     
     return await bcrypt.compare(userPassword, this.password)
    
