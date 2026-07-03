@@ -2,7 +2,7 @@ import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
 
 
-const authorizeRoles = (...roles) => {                                              // make a function and return a function
+const authorizeRoles = (...roles) => {                                         //make a function and return a function
     return asyncHandler(async (req, res, next) => {
         
         if(!req.user){

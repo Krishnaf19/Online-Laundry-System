@@ -35,7 +35,11 @@ const userSchema = new Schema(
             type: String,
             required: true
         },
-        
+
+        image: {
+            type: String
+        },
+
         refreshToken: {
             type: String
         }
@@ -53,9 +57,9 @@ userSchema.pre("save", async function () {                                  //mo
 })
 
 userSchema.methods.isPasswordCorrect = async function (userPassword) {      //jwt is npm package
-    
+
     return await bcrypt.compare(userPassword, this.password)
-   
+
 }
 
 userSchema.methods.generateAccessToken = function () {
@@ -64,16 +68,16 @@ userSchema.methods.generateAccessToken = function () {
         {
             _id: this._id
         },
-            process.env.ACCESS_TOKEN_SECRET
+        process.env.ACCESS_TOKEN_SECRET
         ,
-        { 
+        {
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
 
     )
 }
 
-userSchema.methods.generateRefreshToken = function() {
+userSchema.methods.generateRefreshToken = function () {
 
     return jwt.sign(
         {

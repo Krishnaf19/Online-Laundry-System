@@ -26,11 +26,7 @@ const storeSchema = new Schema({
         type: String,
         required: true
     },
-
-    avatar: {
-        type: String
-    },
-
+    
     averageRating: {
         type: Number,
         default: 0

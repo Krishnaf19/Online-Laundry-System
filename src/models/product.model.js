@@ -10,7 +10,7 @@ const productSchema = new Schema({
 
     category: {
         type: String,
-        enum: ["REGULAR", "IRONING", "DRY CLEANING", "STAIN", "FOOTWEAR", "HOUSEHOLD"],
+        enum: ["Regular", "Ironing", "Dry Cleaning", "Stain", "Footwear", "Household"],
         required: true
     },
 
@@ -31,6 +31,11 @@ const productSchema = new Schema({
     isAvailable: {
         type: Boolean,
         default: true
+    },
+
+    avatar: {
+        type: String,
+        required: true
     }
 },
     {

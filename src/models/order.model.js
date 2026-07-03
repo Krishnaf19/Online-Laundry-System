@@ -7,22 +7,38 @@ const orderSchema = new Schema({
         ref: "User"
     },
 
-    store: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Store",
-        required: true
-    },
+    items: [{
+        product: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Product",
+            required: true
+        },
 
-    product: [{
-        type: mongoose.Types.ObjectId,
-        ref: "Product"
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1
+        }
     }],
 
-    status: {
+    totalPrice: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+
+    orderStatus: {
         type: String,
-        enum: ["PENDING", "DELIVERED", "SHIPPED"],
-        required: true
+        enum: ["Pending", "Delivered", "Canceled", "Shipped", "Reached Laundry"],
+        default: "Pending"
+    },
+
+    paymentStatus: {
+        type: String,
+        enum: ["Pending", "Paid", "Failed", "Refunded"],
+        default: "Pending"
     }
+
 }, { timestamps: true })
 
 export const Order = mongoose.model("Order", orderSchema)

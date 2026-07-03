@@ -4,6 +4,10 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { User } from "../models/user.model.js"
 import jwt from "jsonwebtoken"
 import { isValidObjectId } from "mongoose"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { Cart } from "../models/cart.model.js"
+
+
 
 const registerUser = asyncHandler(async (req, res) => {
 
@@ -13,12 +17,22 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const userExist = await User.findOne(
-        { email }
-    )
+    const userExist = await User.findOne({ email })
 
     if (userExist) {
         throw new ApiError(409, "User with this email already exist")
+    }
+
+    const imageLocalPath = req.file?.path
+
+    if (!imageLocalPath) {
+        throw new ApiError(400, "Image file is required")
+    }
+
+    const image = uploadOnCloudinary(imageLocalPath)
+
+    if (!image) {
+        throw new ApiError(400, "Image file is required")
     }
 
     const user = await User.create({
@@ -26,16 +40,20 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         phoneNumber,
-        userAddress
+        userAddress,
+        image: image?.url || ""
     })
 
-    const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
+    const createdUser = await User.findById(user._id).select("-password -refreshToken")
 
     if (!createdUser) {
         throw new ApiError(500, "Server Error: Something went wrong while registering the user")
     }
+
+    await Cart.create({
+        user: user._id,
+        items: []
+    });
 
     return res
         .status(200)
@@ -43,6 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
             new ApiResponse(200, createdUser, "User registered successfully")
         )
 })
+
 
 const loginUser = asyncHandler(async (req, res) => {
 
@@ -67,7 +86,7 @@ const loginUser = asyncHandler(async (req, res) => {
     //generate refresh token and access token
     const accessToken = user.generateAccessToken()
     const newRefreshToken = user.generateRefreshToken()
-    this.refreshToken = newRefreshToken
+    user.refreshToken = newRefreshToken
     await user.save({ validateBeforeSave: false })      //jab bhi koi data modify hota hai database me save bus uske liye run hota hai, So save() is not specifically for refresh tokens. It saves all modified fields.
 
     const loggedInUser = await User.findById(user?._id).select("-password -refreshToken")
@@ -94,6 +113,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 
+
 const logoutUser = asyncHandler(async (req, res) => {
 
     const userId = req.user?._id
@@ -115,6 +135,10 @@ const logoutUser = asyncHandler(async (req, res) => {
         secure: true
     }
 
+    if (!loggoutUser) {
+        throw new ApiError(404, "User not found")
+    }
+
     return res
         .status(200)
         .clearCookie("accessToken", options)
@@ -124,31 +148,36 @@ const logoutUser = asyncHandler(async (req, res) => {
         )
 })
 
+
 const getCurrentUser = asyncHandler(async (req, res) => {
 
     const userId = req.user?._id
 
     const user = await User.findById(userId)
 
+    if (!user) {
+        throw new ApiError(404, "User not found")
+    }
+
     return res
         .status(200)
         .json(
             new ApiResponse(200, user, "User fetched successfully")
         )
-
 })
+
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
 
     const incomingRefreshToken = req.cookies?.refreshToken
 
-    if (incomingRefreshToken) {
+    if (!incomingRefreshToken) {
         throw new ApiError(401, "Unauthorized user")
     }
 
     const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
 
-    const user = await User.findById(decodedToken?._id)
+    const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
 
     if (!user) {
         throw new ApiError(401, "Invalid refresh token")
@@ -179,27 +208,29 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 })
 
+
 const updatePassword = asyncHandler(async (req, res) => {
 
     const { oldPassword, newPassword } = req.body
 
     const user = await User.findById(req.user?._id)
 
-    const isPasswordCorrect = user.isPasswordCorrect(oldPassword)
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
-        throw new ApiError(401, "Invalid old password")
+        throw new ApiError(400, "Invalid old password")
     }
 
     user.password = newPassword
-    user.save({ validateBeforeSave: false })
+    user.save({ validateBeforeSave: false })                          //we are using so to avoid mongoose validation because we are updating only one field but if we don't use validateBeforeSave then mongoose middleware validate all field which is not required
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200, {}, "Password updated successfully")
+            new ApiResponse(200, user, "Password updated successfully")
         )
 })
+
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
 
@@ -225,7 +256,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     ).select("-password refreshToken")
 
     if (!user) {
-        throw new ApiResponse(500, "Server Error: Unable to update fields")
+        throw new ApiResponse(404, "User not found")
     }
 
     return res
@@ -234,6 +265,42 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             new ApiError(200, user, "Account updated successfully")
         )
 })
+
+
+const updateImage = asyncHandler(async (req, res) => {
+
+    const imageLocalPath = req.file?.path
+
+    if (!imageLocalPath) {
+        throw new ApiError(400, "image file is missing")
+    }
+
+    const image = await uploadOnCloudinary(imageLocalPath)
+
+    if (!image) {
+        throw new ApiError(400, "Error while uploading image on cloudinary")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+
+        {
+            $set: {
+                image: image.url
+            }
+        },
+
+        {
+            new: true
+        }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "image updated successfully"))
+})
+
+
 
 //Admin controllers
 const getAllUsers = asyncHandler(async (req, res) => {
@@ -247,6 +314,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
         );
 
 })
+
 
 const getUserById = asyncHandler(async (req, res) => {
 
@@ -268,6 +336,7 @@ const getUserById = asyncHandler(async (req, res) => {
             new ApiResponse(200, user, "User fetched successfully")
         )
 })
+
 
 const updateRole = asyncHandler(async (req, res) => {
 
@@ -300,7 +369,7 @@ const updateRole = asyncHandler(async (req, res) => {
     ).select("-password -refreshToken")
 
     if (!user) {
-        throw new ApiError(500, "Server Error: Unable to update role")
+        throw new ApiError(404, "User not found")
     }
 
     return res
@@ -311,10 +380,10 @@ const updateRole = asyncHandler(async (req, res) => {
 
 })
 
+
 const deleteUser = asyncHandler(async (req, res) => {
 
     const { userId } = req.params
-
 
     if (!isValidObjectId(userId)) {
         throw new ApiError(401, "Invalid userId")
@@ -323,7 +392,7 @@ const deleteUser = asyncHandler(async (req, res) => {
     const user = await User.findOneAndDelete(userId)
 
     if (!user) {
-        throw new ApiError(500, "Server Error: Unable to delete role")
+        throw new ApiError(404, "User not found")
     }
 
     return res
@@ -335,7 +404,6 @@ const deleteUser = asyncHandler(async (req, res) => {
 
 
 
-
 export {
     registerUser,
     loginUser,
@@ -344,6 +412,7 @@ export {
     refreshAccessToken,
     updatePassword,
     updateAccountDetails,
+    updateImage,
     getAllUsers,
     getUserById,
     updateRole,
