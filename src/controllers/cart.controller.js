@@ -10,64 +10,80 @@ import { Product } from "../models/product.model.js"
 
 const getUserCart = asyncHandler(async (req, res) => {
 
-    const userId = req.user?._id
+    const userId = req.user?._id;
 
     if (!isValidObjectId(userId)) {
-        throw new ApiError(401, "Invalid userId")
+        throw new ApiError(401, "Invalid userId");
     }
 
     const cart = await Cart.findOne({ user: userId })
         .populate({
-            path: "items.product",
-            select: "itemName category price description avatar",
-            populate: ({
-                path: "store",
-                select: "storeName description address phoneNumber avatar averageRating"
-            })
+            path: "store",
+            select: "storeName description address phoneNumber averageRating avatar"
         })
+        .populate({
+            path: "items.product",
+            select: "itemName category price description avatar"
+        });
 
     if (!cart) {
-        throw new ApiError(404, "Cart not found")
+        throw new ApiError(404, "Cart not found");
     }
 
-    let totalPrice = 0
-    let totalQuantity = 0
+    let totalPrice = 0;
+    let totalQuantity = 0;
 
-    cart.items.forEach((eachItem) => {
-        totalPrice += eachItem.product.price * eachItem.quantity
-        totalQuantity += eachItem.quantity
-    })
+    cart.items.forEach((item) => {
+        totalPrice += item.product.price * item.quantity;
+        totalQuantity += item.quantity;
+    });
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, { user: cart.user, items: cart.items, totalPrice, totalQuantity }, "Cart fetched successfully")
+    return res.status(200).json(
+        new ApiResponse(200,
+            {
+                user: cart.user,
+                store: cart.store,
+                items: cart.items,
+                totalPrice,
+                totalQuantity
+            },
+            "Cart fetched successfully"
         )
-})
+    );
+});
 
 
 const addItem = asyncHandler(async (req, res) => {
 
-    const { productId } = req.params
+    const { productId } = req.params;
 
     if (!isValidObjectId(productId)) {
-        throw new ApiError(401, "Invalid productId")
+        throw new ApiError(401, "Invalid productId");
     }
 
-    const product = await Product.findById(productId)
+    const product = await Product.findById(productId);
 
     if (!product) {
         throw new ApiError(404, "Product not found");
     }
 
-    if (product.isAvailable === false) {
-        throw new ApiError(400, "Current the service is unavaliable")
+    if (!product.isAvailable) {
+        throw new ApiError(400, "Currently the service is unavailable");
     }
 
     const cart = await Cart.findOne({ user: req.user._id });
 
     if (!cart) {
         throw new ApiError(404, "Cart not found");
+    }
+
+    if (!cart.store) {
+        cart.store = product.store;
+    }
+
+    // Prevent adding products from another store
+    if (cart.store.toString() !== product.store.toString()) {
+        throw new ApiError(400, "You can only add products from one store")
     }
 
     const item = cart.items.find(
@@ -85,16 +101,10 @@ const addItem = asyncHandler(async (req, res) => {
 
     await cart.save();
 
-    if (!cart) {
-        throw new ApiError(404, "Cart not found")
-    }
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, cart, "Cart updated successfully")
-        )
-})
+    return res.status(200).json(
+        new ApiResponse(200, cart, "Cart updated successfully")
+    );
+});
 
 
 const removeItem = asyncHandler(async (req, res) => {
@@ -120,11 +130,16 @@ const removeItem = asyncHandler(async (req, res) => {
     const item = cart.items.find(
         item => item.product.toString() === productId
     );
+
     if (!item) {
         throw new ApiError(404, "Product not found in cart")
     }
 
     cart.items.pull(item._id)
+
+    if (cart.items.length === 0) {
+        cart.store = null;
+    }
 
     await cart.save()
 
@@ -215,7 +230,8 @@ const clearCart = asyncHandler(async (req, res) => {
         },
         {
             $set: {
-                items: []
+                items: [],
+                store: null
             }
         },
         {
@@ -226,6 +242,8 @@ const clearCart = asyncHandler(async (req, res) => {
     if (!cart) {
         throw new ApiError(404, "Cart not found")
     }
+
+
 
     return res
         .status(200)

@@ -170,7 +170,7 @@ const getStoresProduct = asyncHandler(async (req, res) => {
 
     const products = await Product.find({ store: storeId })
 
-    if (product.length === 0) {
+    if (products.length === 0) {
         throw new ApiError(404, "No products belong to this store")
     }
 

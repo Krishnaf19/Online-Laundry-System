@@ -21,7 +21,12 @@ const cartSchema = new Schema({
             min: 1,
             max: 10
         }
-    }]
+    }],
+
+    store: {
+        type: mongoose.Types.ObjectId,
+        ref: "store"
+    }
 },
     {
         timestamps: true

@@ -21,6 +21,12 @@ const orderSchema = new Schema({
         }
     }],
 
+    store: {
+        type: mongoose.Types.ObjectId,
+        ref: "Store",
+        required: true
+    },
+
     totalPrice: {
         type: Number,
         required: true,

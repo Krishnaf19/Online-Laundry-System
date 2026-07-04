@@ -5,7 +5,7 @@ import { User } from "../models/user.model.js"
 import { Product } from "../models/product.model.js"
 import { isValidObjectId } from "mongoose"
 import { Store } from "../models/store.model.js"
-import { deleteOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteOnCloudinary } from "../utils/cloudinary.js"
 
 
 
@@ -23,7 +23,7 @@ const createProduct = asyncHandler(async (req, res) => {
         throw new ApiError(400, "avatar file is required")
     }
 
-    const avatar = uploadOnCloudinary(avatarLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if (!avatar) {
         throw new ApiError(400, "avatar file is required")
@@ -85,7 +85,7 @@ const updateProductDetails = asyncHandler(async (req, res) => {
 
     const product = await Product.findOneAndUpdate(
         {
-            productId,
+            _id: productId,
             store: store._id
         },
         {
@@ -174,9 +174,9 @@ const getProductById = asyncHandler(async (req, res) => {
 
 const getAllproduct = asyncHandler(async (req, res) => {
 
-    const product = await Product.find({}).populate({
+    const products = await Product.find({}).populate({
         path: "store",
-        select: "storeName, description, address, phoneNumber, averageRating"
+        select: "storeName description address phoneNumber averageRating"
     })
 
 
@@ -206,22 +206,14 @@ const toggleIsAvailable = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Store not found")
     }
 
-    const product = await Product.findOneAndUpdate(
-        {
-            _id: productId,
-            store: store._id
-        },
-        {
-            $set: {
-                isAvailable: {
-                    $not: "$isAvailable"
-                }
-            }
-        },
-        {
-            new: true
-        }
-    )
+    const product = await Product.findOne({
+        _id: productId,
+        store: store._id
+    })
+
+    product.isAvailable = !product.isAvailable
+
+    await product.save()
 
     if (!product) {
         throw new ApiError(404, "Product not found")
@@ -279,7 +271,7 @@ const updateProductAvatar = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, user, "avatar updated successfully"))
+        .json(new ApiResponse(200, product, "avatar updated successfully"))
 })
 
 
@@ -290,5 +282,6 @@ export {
     deleteProduct,
     getProductById,
     getAllproduct,
-    updateProductAvatar
+    updateProductAvatar,
+    toggleIsAvailable
 }

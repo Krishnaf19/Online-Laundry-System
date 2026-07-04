@@ -58,7 +58,7 @@ const updateReview = asyncHandler(async (req, res) => {
     const { reviewId } = req.params
     const { rating, comment } = req.body
 
-    if (!rating || comment) {
+    if (!rating || !comment) {
         throw new ApiError(400, "Both rating and comment are required")
     }
 
@@ -98,7 +98,7 @@ const updateReview = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Server Error: Unable to update review")
     }
 
-    await store.updateStoreReviews(review.store)
+    await Store.updateStoreReviews(review.store)
 
     return res
         .status(200)
@@ -123,16 +123,16 @@ const deleteReview = asyncHandler(async (req, res) => {
     }
 
     if (review.user.toString() !== req.user?._id.toString()) {
-        throw new ApiError(403, "Only owner can update the field")
+        throw new ApiError(403, "Only owner can delete the field")
     }
 
     const deleteReview = await Review.findOneAndDelete({ _id: reviewId })
 
     if (!deleteReview) {
-        throw new ApiError(500, "Server Error: Unable to update review")
+        throw new ApiError(500, "Server Error: Unable to delete review")
     }
 
-    await store.updateStoreReviews(review.store)
+    await Store.updateStoreReviews(review.store)
     
     return res
         .status(200)
