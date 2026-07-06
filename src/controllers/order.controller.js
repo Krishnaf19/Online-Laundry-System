@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js"
 import { isValidObjectId } from "mongoose"
 import { Order } from "../models/order.model.js"
 import { Cart } from "../models/cart.model.js"
+import { Store } from "../models/store.model.js"
 
 
 
@@ -66,7 +67,7 @@ const createOrder = asyncHandler(async (req, res) => {
 const updateOrderStatus = asyncHandler(async (req, res) => {
 
     const { orderId } = req.params
-    const { orderStatus } = req.body
+    const { orderStatus, paymentStatus} = req.body
 
     if (!isValidObjectId(orderId)) {
         throw new ApiError(401, "Invalid orderId")
@@ -83,7 +84,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
         },
         {
             $set: {
-                orderStatus
+                orderStatus,
+                paymentStatus
             }
         },
         {
@@ -112,7 +114,7 @@ const getOrderById = asyncHandler(async (req, res) => {
     }
 
 
-    const order = await Order.findOne(
+    const order = await Order.findById(
         {
             _id: orderId,
             user: req.user?._id
@@ -120,7 +122,7 @@ const getOrderById = asyncHandler(async (req, res) => {
         })
         .populate({
             path: "items.product",
-            select: "itemName category price"
+            select: "itemName category price description avatar"
         })
 
     if (!order) {
@@ -130,7 +132,7 @@ const getOrderById = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(200, order, "Order status changed successfully")
+            new ApiResponse(200, order, "Order fetched successfully")
         )
 })
 
@@ -146,7 +148,7 @@ const getUserOrder = asyncHandler(async (req, res) => {
     const orders = await Order.find({ user: userId })
         .populate({
             path: "items.product",
-            select: "itemName category price description"
+            select: "itemName category price description avatar"
         })
 
     if (orders.length === 0) {
@@ -156,10 +158,11 @@ const getUserOrder = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(200, order, "Order Fetched successfully")
+            new ApiResponse(200, orders, "Order Fetched successfully")
         )
 
 })
+
 
 const getStoreOrder = asyncHandler(async (req, res) => {
 
@@ -176,7 +179,7 @@ const getStoreOrder = asyncHandler(async (req, res) => {
     })
         .populate({
             path: "user",
-            select: "fullName email phoneNumber"
+            select: "fullName email phoneNumber image"
         })
         .populate({
             path: "items.product",
@@ -190,7 +193,7 @@ const getStoreOrder = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, orders, "Store orders fetched successfully")
     );
-});
+})
 
 
 

@@ -43,7 +43,7 @@ const createReview = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Server Error: Unable to create review")
     }
 
-    await store.updateStoreReviews(storeId)
+    await Store.updateStoreReview(storeId);
 
     return res
         .status(200)
@@ -98,7 +98,7 @@ const updateReview = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Server Error: Unable to update review")
     }
 
-    await Store.updateStoreReviews(review.store)
+    await Store.updateStoreReview(review.storeId);
 
     return res
         .status(200)
@@ -132,7 +132,7 @@ const deleteReview = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Server Error: Unable to delete review")
     }
 
-    await Store.updateStoreReviews(review.store)
+    await Store.updateStoreReview(review.store)
     
     return res
         .status(200)
@@ -163,7 +163,7 @@ const getStoreReviews = asyncHandler(async (req, res) => {
         })
         .populate({
             path: "store",
-            select: "storeName description averageRating"
+            select: "storeName description"
         })
 
     if (storeReviews.length === 0) {

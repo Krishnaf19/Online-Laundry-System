@@ -26,7 +26,7 @@ import orderRoute from "./routes/order.route.js"
 app.use("/api/v1/user", userRouter)
 app.use("/api/v1/store", storeRoute)
 app.use("/api/v1/product", productRoute)
-app.use("/api/v1/reviews", reviewRoute)
+app.use("/api/v1/review", reviewRoute)
 app.use("/api/v1/cart", cartRoute)
 app.use("/api/v1/order", orderRoute)
 

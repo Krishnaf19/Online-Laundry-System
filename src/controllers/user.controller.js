@@ -23,16 +23,20 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with this email already exist")
     }
 
-    const imageLocalPath = req.file?.path
+    const imageLocalPath = req.file.path
+
+    console.log(imageLocalPath);
 
     if (!imageLocalPath) {
         throw new ApiError(400, "Image file is required")
     }
 
-    const image = uploadOnCloudinary(imageLocalPath)
+    const image = await uploadOnCloudinary(imageLocalPath)
+
+    console.log(image);
 
     if (!image) {
-        throw new ApiError(400, "Image file is required")
+        throw new ApiError(400, "Image file is required cloudinary")
     }
 
     const user = await User.create({
@@ -177,7 +181,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
 
-    const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
+    const user = await User.findById(decodedToken?._id).select("-password")
 
     if (!user) {
         throw new ApiError(401, "Invalid refresh token")
@@ -196,7 +200,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const newRefreshToken = user.generateRefreshToken()
 
     user.refreshToken = newRefreshToken
-    user.save({ validateBeforeSave: false })
+    await user.save({ validateBeforeSave: false })
 
     return res
         .status(200)
@@ -241,7 +245,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(
-        re.user?._id,
+        req.user?._id,
         {
             $set: {
                 fullName,
@@ -253,7 +257,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         {
             new: true
         }
-    ).select("-password refreshToken")
+    ).select("-password -refreshToken")
 
     if (!user) {
         throw new ApiResponse(404, "User not found")
@@ -262,7 +266,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiError(200, user, "Account updated successfully")
+            new ApiResponse(200, user, "Account updated successfully")
         )
 })
 
@@ -283,13 +287,11 @@ const updateImage = asyncHandler(async (req, res) => {
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
-
         {
             $set: {
                 image: image.url
             }
         },
-
         {
             new: true
         }
@@ -305,14 +307,14 @@ const updateImage = asyncHandler(async (req, res) => {
 //Admin controllers
 const getAllUsers = asyncHandler(async (req, res) => {
 
-    const users = await User.find({}).select("-password, refreshToken")
+    const users = await User.find({}).select("-password -refreshToken")
 
     return res
         .status(200)
         .json(
-            new ApiResponse(200, users, "Users fetched successfully")
-        );
-
+            new ApiResponse(
+                200, users, "Users fetched successfully")
+        )
 })
 
 

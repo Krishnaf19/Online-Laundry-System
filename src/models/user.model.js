@@ -62,7 +62,7 @@ userSchema.methods.isPasswordCorrect = async function (userPassword) {      //jw
 
 }
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function () {                      //methods are used me we need the function for a specific document
 
     return jwt.sign(
         {

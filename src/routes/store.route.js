@@ -1,7 +1,7 @@
 import { Router } from "express"
 import { createStore, updateStore, deleteStore, getStoreById, getAllStore, getStoresProduct } from "../controllers/store.controller.js"
-import { verifyJWT } from "../middleware/auth.middleware.js"
-import { authorizeRoles } from "../middleware/role.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js"
+import { authorizeRoles } from "../middlewares/authorizeRoles.middleware.js"
 
 const router = Router()
 

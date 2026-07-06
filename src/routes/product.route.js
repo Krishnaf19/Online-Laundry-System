@@ -1,8 +1,8 @@
 import { Router } from "express"
 import { createProduct, updateProductDetails, deleteProduct, getProductById, getAllproduct, toggleIsAvailable, updateProductAvatar} from "../controllers/product.controller.js"
-import { verifyJWT } from "../middleware/auth.middleware.js"
-import { authorizeRoles } from "../middleware/role.middleware.js"
-import { upload } from "../middleware/multer.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js"
+import { authorizeRoles } from "../middlewares/authorizeRoles.middleware.js"
+import { upload } from "../middlewares/multer.middlerware.js"
 
 const router = Router();
 

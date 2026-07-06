@@ -19,7 +19,7 @@ const getUserCart = asyncHandler(async (req, res) => {
     const cart = await Cart.findOne({ user: userId })
         .populate({
             path: "store",
-            select: "storeName description address phoneNumber averageRating avatar"
+            select: "storeName description address phoneNumber averageRating"
         })
         .populate({
             path: "items.product",
@@ -86,7 +86,7 @@ const addItem = asyncHandler(async (req, res) => {
         throw new ApiError(400, "You can only add products from one store")
     }
 
-    const item = cart.items.find(
+    const item = cart.items.find(                                           //use a find()
         item => item.product.toString() === productId
     );
 

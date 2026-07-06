@@ -154,15 +154,21 @@ const getProductById = asyncHandler(async (req, res) => {
     }
 
     const product = await Product.findById(productId)
+        .populate({
+            path: "store",
+            select: "storeName description address phoneNumber averageRating",
+            populate: {
+                path: "owner",
+                select: "fullName image"
+            }
+        })
 
     if (!product) {
         throw new ApiError(404, "Product not found")
     }
 
-    await product.populate({
-        path: "store",
-        select: "storeNam description address phoneNumber averageRating"
-    })
+
+
 
     return res
         .status(200)
@@ -176,7 +182,11 @@ const getAllproduct = asyncHandler(async (req, res) => {
 
     const products = await Product.find({}).populate({
         path: "store",
-        select: "storeName description address phoneNumber averageRating"
+        select: "storeName description address phoneNumber averageRating",
+        populate: {
+            path: "owner",
+            select: "fullName image"
+        }
     })
 
 
@@ -187,7 +197,7 @@ const getAllproduct = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(200, product, "Product fetched successfully")
+            new ApiResponse(200, products, "Product fetched successfully")
         )
 })
 

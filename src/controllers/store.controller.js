@@ -36,7 +36,7 @@ const createStore = asyncHandler(async (req, res) => {
 
     await store.populate({
         path: "owner",
-        select: "fullName email avatar"
+        select: "fullName email image"
     })
 
     return res
@@ -79,7 +79,7 @@ const updateStore = asyncHandler(async (req, res) => {
 
     await store.populate({
         path: "owner",
-        select: "fullName email avatar"
+        select: "fullName email image"
     });
 
 
@@ -94,14 +94,7 @@ const updateStore = asyncHandler(async (req, res) => {
 
 const deleteStore = asyncHandler(async (req, res) => {
 
-    const { storeId } = req.params
-
-    if (!isValidObjectId(storeId)) {
-        throw new ApiError(401, "Invalid storeId")
-    }
-
     const store = await Store.findOneAndDelete({
-        _id: storeId,
         owner: req.user._id
     });
 
@@ -146,8 +139,11 @@ const getStoreById = asyncHandler(async (req, res) => {
 
 const getAllStore = asyncHandler(async (req, res) => {
 
-    const store = await Store.find({})
-
+    const store = await Store.find({}).populate({
+        path: "owner",
+        select: "fullName image"
+    })
+    
     if (store.length === 0) {
         throw new ApiError(404, "No store is made")
     }

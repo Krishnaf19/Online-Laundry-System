@@ -35,7 +35,7 @@ const storeSchema = new Schema({
 }, { timestamps: true })
 
 
-storeSchema.statics.updateStoreReview = async function (storeId) {
+storeSchema.statics.updateStoreReview = async function (storeId) {      //statics is used when we need to apply the function for whole document
 
     const result = await Review.aggregate([
         {
